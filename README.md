@@ -12,10 +12,12 @@ Pré-requisitos: Java 21, Maven wrapper incluído.
 
 Variáveis principais:
 - `CLIENT_ID`: Client ID do provedor (obrigatório para chamadas reais).
+  - **IMPORTANTE**: O Client ID deve ser válido e ativo no serviço upstream.
+  - O valor padrão `1` é válido para testes, mas pode ser sobrescrito.
 
 Comando:
 ```bash
-CLIENT_ID=seu_id ./mvnw spring-boot:run
+CLIENT_ID=seu_id_valido ./mvnw spring-boot:run
 ```
 
 Porta padrão: `8080`.
@@ -80,11 +82,6 @@ Política de Fila: envie `x-priority: HIGH` para priorização; requests com TTL
 - O ajuste de cadência é heurístico simples baseado na latência observada.
 - Controller retorna 202->sincrono: aqui optamos por bloquear até TTL para simplicidade do cliente; poderia ser assíncrono com polling.
 - Cache por chave de query simples; pode ser estendido para headers relevantes.
-
-## Segurança e Ética
-
-- Não exponha `CLIENT_ID` em repositórios públicos.
-- Limite testes de carga; prefira simulações.
 
 
 

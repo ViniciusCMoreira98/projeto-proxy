@@ -37,6 +37,12 @@ public class ProxyController {
     @GetMapping("/score")
     public ResponseEntity<?> getScore(@RequestParam Map<String, String> params,
                                       @RequestHeader Map<String, String> headers) throws InterruptedException {
+        String overrideClientId = headers.getOrDefault("x-client-id", params.getOrDefault("clientId", "")).trim();
+        boolean hasOverride = !overrideClientId.isBlank();
+        
+        if (!hasOverride && (config.getClientId() == null || config.getClientId().isBlank())) {
+            return ResponseEntity.badRequest().body("CLIENT_ID ausente. Informe header x-client-id ou query clientId, ou configure proxy.client-id.");
+        }
         String cacheKey = buildCacheKey(params);
         String cached = cache.getIfPresent(cacheKey);
         if (cached != null) {
@@ -49,7 +55,7 @@ public class ProxyController {
         Instant ttl = Instant.now().plusMillis(config.getRequestTtlMs());
         Map<String, String> safeHeaders = new HashMap<>(headers);
 
-        PrioritizedRequest req = new PrioritizedRequest("/score", params, safeHeaders, prio, ttl);
+        PrioritizedRequest req = new PrioritizedRequest("/score", params, safeHeaders, overrideClientId, prio, ttl);
         boolean accepted = queue.offer(req, config.getQueueOfferTimeoutMs());
         if (!accepted) {
             metrics.counter("proxy.queue.drop", "reason", "full").increment();

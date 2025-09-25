@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 public class ProxyConfig {
     private String upstreamBaseUrl = "https://score.hsborges.dev";
     private String clientId;
+    private String scorePath = "/score";
     private int queueMaxSize = 100;
     private long queueOfferTimeoutMs = 50;
     private long requestTtlMs = 10000;
@@ -20,6 +21,8 @@ public class ProxyConfig {
     public void setUpstreamBaseUrl(String upstreamBaseUrl) { this.upstreamBaseUrl = upstreamBaseUrl; }
     public String getClientId() { return clientId; }
     public void setClientId(String clientId) { this.clientId = clientId; }
+    public String getScorePath() { return scorePath; }
+    public void setScorePath(String scorePath) { this.scorePath = scorePath; }
     public int getQueueMaxSize() { return queueMaxSize; }
     public void setQueueMaxSize(int queueMaxSize) { this.queueMaxSize = queueMaxSize; }
     public long getQueueOfferTimeoutMs() { return queueOfferTimeoutMs; }

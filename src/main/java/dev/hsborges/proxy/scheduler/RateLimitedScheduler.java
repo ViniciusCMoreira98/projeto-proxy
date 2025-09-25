@@ -68,7 +68,7 @@ public class RateLimitedScheduler {
                 return;
             }
             Instant start = Instant.now();
-            upstreamClient.fetchScore(req.getQueryParams(), req.getHeaders())
+            upstreamClient.fetchScore(req.getQueryParams(), req.getHeaders(), req.getClientId())
                     .doOnError(err -> metrics.counter("proxy.upstream.errors").increment())
                     .doOnSuccess(body -> {
                         metrics.counter("proxy.upstream.success").increment();

@@ -13,6 +13,7 @@ public class PrioritizedRequest implements Comparable<PrioritizedRequest> {
     private final String path;
     private final Map<String, String> queryParams;
     private final Map<String, String> headers;
+    private final String clientId;
     private final Priority priority;
     private final Instant enqueuedAt;
     private final Instant expiresAt;
@@ -21,12 +22,14 @@ public class PrioritizedRequest implements Comparable<PrioritizedRequest> {
     public PrioritizedRequest(String path,
                               Map<String, String> queryParams,
                               Map<String, String> headers,
+                              String clientId,
                               Priority priority,
                               Instant expiresAt) {
         this.id = UUID.randomUUID().toString();
         this.path = path;
         this.queryParams = queryParams;
         this.headers = headers;
+        this.clientId = clientId;
         this.priority = priority == null ? Priority.MEDIUM : priority;
         this.enqueuedAt = Instant.now();
         this.expiresAt = expiresAt;
@@ -37,6 +40,7 @@ public class PrioritizedRequest implements Comparable<PrioritizedRequest> {
     public String getPath() { return path; }
     public Map<String, String> getQueryParams() { return queryParams; }
     public Map<String, String> getHeaders() { return headers; }
+    public String getClientId() { return clientId; }
     public Priority getPriority() { return priority; }
     public Instant getEnqueuedAt() { return enqueuedAt; }
     public Instant getExpiresAt() { return expiresAt; }
