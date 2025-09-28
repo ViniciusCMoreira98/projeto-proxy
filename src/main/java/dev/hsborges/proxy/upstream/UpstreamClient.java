@@ -1,5 +1,7 @@
 package dev.hsborges.proxy.upstream;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.hsborges.proxy.config.ProxyConfig;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
@@ -7,7 +9,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
@@ -17,6 +18,7 @@ import java.util.Map;
 public class UpstreamClient {
     private final WebClient webClient;
     private final ProxyConfig config;
+    private final ObjectMapper mapper = new ObjectMapper();
 
     public UpstreamClient(ProxyConfig config, WebClient.Builder builder) {
         this.config = config;
@@ -39,7 +41,6 @@ public class UpstreamClient {
             return b.build();
         }).accept(MediaType.APPLICATION_JSON);
 
-        // Sempre envia client-id como header conforme contrato do provider
         if (effectiveClientId != null && !effectiveClientId.isBlank()) {
             spec.header("client-id", effectiveClientId);
         }
@@ -52,12 +53,12 @@ public class UpstreamClient {
             });
         }
 
-        // Força aceitar gzip (mesmo que não venha, não atrapalha)
         spec.header(HttpHeaders.ACCEPT_ENCODING, "gzip");
 
         return spec.exchangeToMono(response -> {
             if (response.statusCode().is2xxSuccessful()) {
-                return response.bodyToMono(byte[].class).map(bytes -> extractJson(new String(bytes, StandardCharsets.UTF_8)));
+                return response.bodyToMono(byte[].class)
+                        .map(bytes -> fixMessage(new String(bytes, StandardCharsets.UTF_8)));
             }
             int code = response.statusCode().value();
             return response.bodyToMono(byte[].class)
@@ -65,10 +66,6 @@ public class UpstreamClient {
                     .map(bytes -> {
                         String raw = new String(bytes, StandardCharsets.UTF_8);
                         String body = extractJson(raw);
-                        if (code == 401 && body.contains("Client ID is required")) {
-                            return "{\"status\":\"upstream_error\",\"code\":" + code + ",\"body\":" +
-                                    quoteJson("Client ID inválido ou ausente. Verifique se o Client ID está correto e ativo no serviço upstream.") + "}";
-                        }
                         return "{\"status\":\"upstream_error\",\"code\":" + code + ",\"body\":" + quoteJson(body) + "}";
                     });
         });
@@ -80,13 +77,32 @@ public class UpstreamClient {
         return Mono.just("{\"status\":\"fallback\",\"reason\":\"upstream unavailable\"}");
     }
 
+    private String fixMessage(String raw) {
+        try {
+            String json = extractJson(raw);
+            JsonNode node = mapper.readTree(json);
+
+            if (node.has("cpf") && node.has("score")) {
+                String cpf = node.get("cpf").asText();
+                int score = node.get("score").asInt();
+
+                ((com.fasterxml.jackson.databind.node.ObjectNode) node).put("message",
+                        "O score de " + cpf + " é " + score);
+            }
+
+            return mapper.writeValueAsString(node);
+        } catch (Exception e) {
+            return extractJson(raw);
+        }
+    }
+
     private static String extractJson(String raw) {
         int start = raw.indexOf('{');
         int end = raw.lastIndexOf('}');
         if (start >= 0 && end > start) {
             return raw.substring(start, end + 1);
         }
-        return raw; // fallback caso não ache JSON
+        return raw;
     }
 
     private static String quoteJson(String raw) {
