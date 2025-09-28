@@ -67,7 +67,7 @@ Pode ser sobrescrito via variáveis de ambiente (`PROXY_*` ou `CLIENT_ID`).
 
 Exemplo de rajada controlada (20 req/1s):
 ```bash
-seq 1 20 | xargs -I{} -P20 curl -s "http://localhost:8080/proxy/score?doc=123{}" -H "x-priority: MEDIUM" | wc -l
+seq 1 20 | xargs -I{} -P20 curl -s "http://localhost:8080/proxy/score?cpf=123{}" -H "x-priority: MEDIUM" | wc -l
 ```
 Observar em `/metrics` ~1 req/s no upstream e crescimento controlado da fila.
 
